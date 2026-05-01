@@ -1,0 +1,21 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.idea/
+.vscode/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# ML artifacts (keep directory, ignore big binaries)
+ml_models/*.pkl
+ml_models/*.joblib
