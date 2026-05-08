@@ -6,6 +6,7 @@ from typing import Any
 
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import requests
 import streamlit as st
 
@@ -276,6 +277,46 @@ def main():
         _line_chart(df, "fiscal_year", "production", "Crop Production Trend", "Production")
         st.markdown("</div>", unsafe_allow_html=True)
 
+        # 100% Stacked Chart for Rainfall, Avg Temp, and Production
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        # Normalize values to percentages
+        df_normalized = df.copy()
+        df_normalized['total'] = df_normalized['rainfall'] + df_normalized['avg_temperature'] + df_normalized['production']
+        df_normalized['rainfall_pct'] = (df_normalized['rainfall'] / df_normalized['total']) * 100
+        df_normalized['avg_temperature_pct'] = (df_normalized['avg_temperature'] / df_normalized['total']) * 100
+        df_normalized['production_pct'] = (df_normalized['production'] / df_normalized['total']) * 100
+
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=df_normalized['fiscal_year'], 
+            y=df_normalized['rainfall_pct'], 
+            mode='lines', 
+            name='Rainfall (%)', 
+            stackgroup='one'
+        ))
+        fig.add_trace(go.Scatter(
+            x=df_normalized['fiscal_year'], 
+            y=df_normalized['avg_temperature_pct'], 
+            mode='lines', 
+            name='Avg Temperature (%)', 
+            stackgroup='one'
+        ))
+        fig.add_trace(go.Scatter(
+            x=df_normalized['fiscal_year'], 
+            y=df_normalized['production_pct'], 
+            mode='lines', 
+            name='Production (%)', 
+            stackgroup='one'
+        ))
+        fig.update_layout(
+            title='100% Stacked Line Chart: Rainfall, Avg Temperature, and Production',
+            xaxis_title='Fiscal Year',
+            yaxis_title='Percentage (%)',
+            showlegend=True
+        )
+        st.plotly_chart(fig, use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
     with tab2:
         st.markdown("### Production Prediction Dashboard")
         left, right = st.columns([2, 3])
@@ -294,7 +335,8 @@ def main():
                     try:
                         res = predict(cfg.base_url, crop2, rainfall, temp)
                         pred_val = res.get("predicted_production")
-                        st.markdown(f'<div class="metric-big">{pred_val:.4f}</div>', unsafe_allow_html=True)
+                        st.markdown(f'<div class="metric-big">{pred_val:.4f} tons/ha</div>', unsafe_allow_html=True)
+                        st.markdown('<div class="muted">Unit: tons per hectare</div>', unsafe_allow_html=True)
                         st.markdown(
                             f'<div class="muted">Crop: <b>{crop2}</b> · Features: rainfall={rainfall}, avg_temperature={temp}</div>',
                             unsafe_allow_html=True,
