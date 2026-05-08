@@ -17,11 +17,10 @@ class Settings(BaseSettings):
     api_port: int = 8000
 
     # Database
-    # Default keeps imports/runs working; override in `.env` for your real DB.
-    database_url: str = "postgresql+psycopg2://postgres:password@localhost:5432/dbms-project"
+    database_url: str = "postgresql+psycopg2://postgres:u9expected@localhost:5432/dbms-project"
 
     # ML
-    ml_models_dir: str = "ml_models"
+    ml_models_dir: str = "models"
 
     def ml_models_path(self) -> Path:
         p = Path(self.ml_models_dir)
