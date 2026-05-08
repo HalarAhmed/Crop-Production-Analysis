@@ -6,8 +6,10 @@ import numpy as np
 warnings.filterwarnings('ignore')
 
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression, Ridge
-from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.preprocessing import StandardScaler, PolynomialFeatures
+from sklearn.pipeline import Pipeline
+from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 
 try:
@@ -31,7 +33,7 @@ print(f"\nRainfall range: {df['rainfall'].min():.2f} to {df['rainfall'].max():.2
 print(f"Temperature range: {df['avg_temperature'].min():.2f} to {df['avg_temperature'].max():.2f}")
 print(f"Yield range: {df['yield'].min():.2f} to {df['yield'].max():.2f}")
 
-print(f"{'Crop Name':<15} | {'Samples':<8} | {'Linear R2':<12} | {'Ridge R2':<12} | {'MSE':<12} | {'MAE':<10}")
+print(f"{'Crop Name':<15} | {'Samples':<8} | {'RF R2':<12} | {'RF MSE':<12} | {'MAE':<10}")
 print("-" * 85)
 
 # Loop through each crop to train and test
@@ -63,43 +65,37 @@ for crop in df['crop_name'].unique():
     
     X_train, X_test, y_train, y_test = train_test_split(X_filtered, y_filtered, test_size=0.2, random_state=42)
     
-    # Scale features
+    # Use Random Forest (better for non-linear relationships)
     scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
+    X_train_scaled = scaler.fit(X_train)
+    X_train_scaled = scaler.transform(X_train)
     X_test_scaled = scaler.transform(X_test)
     
-    # LINEAR MODEL
-    linear_model = LinearRegression()
-    linear_model.fit(X_train_scaled, y_train)
-    y_pred_linear = linear_model.predict(X_test_scaled)
-    linear_r2 = r2_score(y_test, y_pred_linear)
-    linear_mse = mean_squared_error(y_test, y_pred_linear)
+    rf_model = RandomForestRegressor(
+        n_estimators=50,        # Reduce trees
+        max_depth=5,            # Reduce depth
+        min_samples_split=5,    # Increase split requirement
+        min_samples_leaf=3,     # Increase leaf samples
+        random_state=42
+    )
+    rf_model.fit(X_train_scaled, y_train)
+    y_pred_rf = rf_model.predict(X_test_scaled)
+    rf_r2 = r2_score(y_test, y_pred_rf)
+    rf_mse = mean_squared_error(y_test, y_pred_rf)
+    mae = mean_absolute_error(y_test, y_pred_rf)
     
-    # RIDGE MODEL (regularization)
-    ridge_model = Ridge(alpha=10.0)
-    ridge_model.fit(X_train_scaled, y_train)
-    y_pred_ridge = ridge_model.predict(X_test_scaled)
-    ridge_r2 = r2_score(y_test, y_pred_ridge)
-    ridge_mse = mean_squared_error(y_test, y_pred_ridge)
-    mae = mean_absolute_error(y_test, y_pred_ridge)
+    print(f"{crop:<15} | {len(crop_data):<8} | {rf_r2:<12.4f} | {rf_mse:<12.2f} | {mae:<10.2f}")
     
-    # Choose better model
-    best_model = ridge_model if ridge_r2 > linear_r2 else linear_model
-    
-    print(f"{crop:<15} | {len(crop_data):<8} | {linear_r2:<12.4f} | {ridge_r2:<12.4f} | {ridge_mse:<12.2f} | {mae:<10.2f}")
-    
-    # Save the better model with scaler
-    filename = f"models/model_{crop.replace(' ', '_').lower()}.pkl"
-    scaler_file = f"models/scaler_{crop.replace(' ', '_').lower()}.pkl"
-    joblib.dump(best_model, filename)
-    joblib.dump(scaler, scaler_file)
+    # Save model AND scaler
+    model_filename = f"models/model_{crop.replace(' ', '_').lower()}.pkl"
+    scaler_filename = f"models/scaler_{crop.replace(' ', '_').lower()}.pkl"
+    joblib.dump(rf_model, model_filename)
+    joblib.dump(scaler, scaler_filename)
 
-    print(f"\n  Coefficients for {crop}:")
-    print(f"    Rainfall: {best_model.coef_[0]:.6f}")
-    print(f"    Temperature: {best_model.coef_[1]:.6f}")
-    print(f"    Intercept: {best_model.intercept_:.2f}")
+    # Feature importance
+    print(f"\n  Feature Importance for {crop}:")
+    print(f"    Rainfall: {rf_model.feature_importances_[0]:.4f}")
+    print(f"    Temperature: {rf_model.feature_importances_[1]:.4f}")
 
 print("\n All models trained, tested, and saved!")
-print("\nModel coefficients show:")
-print(" Positive coefficient = more rainfall/heat increases yield")
-print(" Negative coefficient = less rainfall/heat increases yield")
+print("\nRandom Forest captures non-linear relationships better than linear regression!")

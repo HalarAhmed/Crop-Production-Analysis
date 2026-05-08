@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Agricultural Crop Analysis & Production Prediction (DBMS + ML)
 
 Full-stack semester project using:
@@ -117,3 +118,6 @@ streamlit run frontend/app.py
   - `crop`, `year`, `productiondata`, `weatherdata`
   - view: `ml_ready_data`
 - No model retraining happens in this app; it only loads your saved `.pkl` files.
+=======
+# Crop-Production-Analysis
+>>>>>>> 54589ab7b2a2ebe32535cf811401320fa6d1f08d
